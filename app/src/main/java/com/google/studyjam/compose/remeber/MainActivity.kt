@@ -1,4 +1,4 @@
-package com.dailystudio.compose.notebook
+package com.google.studyjam.compose.remeber
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -8,7 +8,11 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.*
 
 class MainActivity : ComponentActivity() {
@@ -20,60 +24,83 @@ class MainActivity : ComponentActivity() {
 
 }
 
-class NavOption(val route: String, val label: String) {
+class NavOption(val route: String,
+                val label: String) {
+}
+
+class CountsViewModel : ViewModel() {
+
+    val counts = mapOf(
+        "0" to MutableLiveData(0),
+        "1" to MutableLiveData(0),
+        "2" to MutableLiveData(0),
+        "3" to MutableLiveData(0)
+    )
+
+    fun onCountsChanged(route: String, newCount: Int) {
+        val count = counts[route] ?: return
+
+        count.value = newCount
+    }
 }
 
 @Composable
 fun Home() {
+    val countsViewModel: CountsViewModel = viewModel()
+
     val options = mutableListOf<NavOption>().apply {
-        for (i in 0 until 4) {
-            add(NavOption("route$i", "Tab $i"))
+        for (route in countsViewModel.counts.keys) {
+            add(NavOption(route, "Tab $route"))
         }
     }
 
     val navController = rememberNavController()
-    val (navIndex, setNavIndex) = remember { mutableStateOf(0)}
     Scaffold(
         bottomBar = {
             BottomNavigation {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.arguments?.getString(KEY_ROUTE)
-                for ((i, opt) in options.withIndex()) {
+                for (opt in options) {
                     BottomNavigationItem(
                         icon = { Icon(Icons.Filled.Favorite, contentDescription = null) },
                         label = { Text(opt.label) },
                         selected = currentRoute == opt.route,
                         onClick = {
-//                            navController.navigate(naviOption.route)
-                            setNavIndex(i)
+                            navController.navigate(opt.route)
                         }
                     )
                 }
             }
         }
     ) {
-        PreviewScreen(navOption = options[navIndex])
-
-        /*NavHost(navController, startDestination = options[0].route) {
+        NavHost(navController, startDestination = options[0].route) {
             for (o in options) {
-                composable(o.route) { PreviewScreen(navOption = o)}
+                composable(o.route) {
+                    val count by countsViewModel.counts[o.route]!!.observeAsState()
+
+                    PreviewScreen(navOption = o,
+                        count!!
+                    ) {
+                        countsViewModel.onCountsChanged(o.route,
+                            it + 1
+                        )
+                    }
+                }
             }
-        }*/
+        }
     }
 }
 
-
 @Composable
-fun PreviewScreen(navOption: NavOption) {
-    val (count, setCount) = rememberSaveable(navOption.route) {
-        mutableStateOf(0)
-    }
-
+fun PreviewScreen(navOption: NavOption,
+                  count: Int,
+                  countUpdate: (Int) -> Unit
+) {
     Column {
         Text(text = navOption.label)
         Text(text = count.toString())
-        Button(onClick = { setCount(count + 1) }) {
-            Text("Plus 1")
+        Button(onClick = { countUpdate(count) }) {
+            Text("Add 1")
         }
     }
 

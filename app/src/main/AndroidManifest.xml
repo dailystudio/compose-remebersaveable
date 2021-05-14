@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.dailystudio.compose.notebook">
+    package="com.google.studyjam.compose.remeber">
 
     <application
         android:allowBackup="true"
