@@ -1,2 +1,2 @@
-# compose-remebersaveable
-Code sample for Android Compose - rememberSaveable
+# Memorize states among different composables
+Sample codes for saving states different composables
